@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -6,24 +5,37 @@
   <title>Singapore PSI Readings</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: "Segoe UI", Arial, sans-serif;
       background: #f7f9fc;
       margin: 0;
-      padding: 20px;
+      padding: 30px;
       text-align: center;
     }
 
     h1 {
-      color: #333;
+      color: #222;
+      margin-bottom: 5px;
+    }
+
+    #lastUpdated {
+      font-size: 14px;
+      color: #555;
+      margin-top: 0;
+    }
+
+    #refreshNotice {
+      font-size: 13px;
+      color: #777;
+      margin-top: 3px;
     }
 
     .table-container {
-      max-height: 500px; /* enables vertical scrolling */
+      max-height: 500px;
       overflow-y: auto;
-      margin: 20px auto;
+      margin: 25px auto;
       width: 90%;
-      border-radius: 8px;
-      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.08);
       background: white;
     }
 
@@ -38,6 +50,7 @@
       padding: 10px;
       text-align: center;
       word-wrap: break-word;
+      font-size: 14px;
     }
 
     th {
@@ -47,46 +60,42 @@
       top: 0;
     }
 
-    #lastUpdated {
-      margin-top: 15px;
-      font-size: 14px;
-      color: #555;
+    tr:nth-child(even) {
+      background: #f2f6fb;
     }
 
-    #refreshNotice {
-      font-size: 13px;
-      color: #888;
-      margin-top: 5px;
+    .region {
+      font-weight: bold;
+      color: #333;
     }
   </style>
 </head>
 <body>
   <h1>Singapore PSI Readings</h1>
+  <p id="lastUpdated">Loading latest data...</p>
+  <p id="refreshNotice">(Auto-refreshes every 5 minutes)</p>
 
   <div class="table-container">
     <table id="psiTable">
       <thead>
         <tr>
           <th>Region</th>
-          <th>o3_sub_index</th>
-          <th>pm10_twenty_four_hourly</th>
-          <th>pm10_sub_index</th>
-          <th>co_sub_index</th>
-          <th>pm25_twenty_four_hourly</th>
-          <th>so2_sub_index</th>
-          <th>co_eight_hour_max</th>
-          <th>no2_one_hour_max</th>
-          <th>so2_twenty_four_hourly</th>
-          <th>pm25_sub_index</th>
-          <th>psi_twenty_four_hourly</th>
+          <th>O₃ Sub Index</th>
+          <th>PM₁₀ (24h)</th>
+          <th>PM₁₀ Sub Index</th>
+          <th>CO Sub Index</th>
+          <th>PM₂.₅ (24h)</th>
+          <th>SO₂ Sub Index</th>
+          <th>CO (8h Max)</th>
+          <th>NO₂ (1h Max)</th>
+          <th>SO₂ (24h)</th>
+          <th>PM₂.₅ Sub Index</th>
+          <th>PSI (24h)</th>
         </tr>
       </thead>
       <tbody id="psiData"></tbody>
     </table>
   </div>
-
-  <p id="lastUpdated"></p>
-  <p id="refreshNotice">(Auto-refreshes every 5 minutes)</p>
 
   <script>
     async function fetchPSIData() {
@@ -100,25 +109,35 @@
 
         tbody.innerHTML = '';
 
+        const metrics = [
+          { key: 'o3_sub_index', label: 'O₃ Sub Index' },
+          { key: 'pm10_twenty_four_hourly', label: 'PM₁₀ (24h)' },
+          { key: 'pm10_sub_index', label: 'PM₁₀ Sub Index' },
+          { key: 'co_sub_index', label: 'CO Sub Index' },
+          { key: 'pm25_twenty_four_hourly', label: 'PM₂.₅ (24h)' },
+          { key: 'so2_sub_index', label: 'SO₂ Sub Index' },
+          { key: 'co_eight_hour_max', label: 'CO (8h Max)' },
+          { key: 'no2_one_hour_max', label: 'NO₂ (1h Max)' },
+          { key: 'so2_twenty_four_hourly', label: 'SO₂ (24h)' },
+          { key: 'pm25_sub_index', label: 'PM₂.₅ Sub Index' },
+          { key: 'psi_twenty_four_hourly', label: 'PSI (24h)' }
+        ];
+
         regions.forEach(region => {
           const row = document.createElement('tr');
-          const metrics = [
-            'o3_sub_index', 'pm10_twenty_four_hourly', 'pm10_sub_index',
-            'co_sub_index', 'pm25_twenty_four_hourly', 'so2_sub_index',
-            'co_eight_hour_max', 'no2_one_hour_max', 'so2_twenty_four_hourly',
-            'pm25_sub_index', 'psi_twenty_four_hourly'
-          ];
-
-          row.innerHTML = `<td>${region}</td>` + metrics.map(metric => 
-            `<td>${readings[metric][region]}</td>`
-          ).join('');
-
+          let rowHTML = `<td class="region">${region}</td>`;
+          metrics.forEach(metric => {
+            rowHTML += `<td>${readings[metric.key][region]}</td>`;
+          });
+          row.innerHTML = rowHTML;
           tbody.appendChild(row);
         });
 
-        lastUpdated.textContent = `Last updated: ${new Date(data.items[0].update_timestamp).toLocaleString()}`;
+        const updateTime = new Date(data.items[0].update_timestamp);
+        lastUpdated.textContent = `Last updated: ${updateTime.toLocaleString('en-SG', { hour12: true })}`;
       } catch (error) {
         console.error('Error fetching PSI data:', error);
+        document.getElementById('lastUpdated').textContent = "Error loading data. Please refresh.";
       }
     }
 
