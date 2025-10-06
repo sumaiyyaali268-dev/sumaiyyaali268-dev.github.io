@@ -1,72 +1,130 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Singapore PSI Data</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Singapore PSI Readings</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 30px;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
+      background: #f7f9fc;
+      margin: 0;
+      padding: 20px;
       text-align: center;
     }
+
+    h1 {
+      color: #333;
+    }
+
+    .table-container {
+      max-height: 500px; /* enables vertical scrolling */
+      overflow-y: auto;
+      margin: 20px auto;
+      width: 90%;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      background: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+      word-wrap: break-word;
+    }
+
     th {
-      background-color: #f4f4f4;
+      background: #0078d7;
+      color: white;
+      position: sticky;
+      top: 0;
+    }
+
+    #lastUpdated {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    #refreshNotice {
+      font-size: 13px;
+      color: #888;
+      margin-top: 5px;
     }
   </style>
 </head>
 <body>
-  <h1>Real-time PSI Data from data.gov.sg</h1>
-  <table id="psiTable">
-    <thead>
-      <tr>
-        <th>Reading Type</th>
-        <th>North</th>
-        <th>South</th>
-        <th>East</th>
-        <th>West</th>
-        <th>Central</th>
-        <th>National</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <h1>Singapore PSI Readings</h1>
+
+  <div class="table-container">
+    <table id="psiTable">
+      <thead>
+        <tr>
+          <th>Region</th>
+          <th>o3_sub_index</th>
+          <th>pm10_twenty_four_hourly</th>
+          <th>pm10_sub_index</th>
+          <th>co_sub_index</th>
+          <th>pm25_twenty_four_hourly</th>
+          <th>so2_sub_index</th>
+          <th>co_eight_hour_max</th>
+          <th>no2_one_hour_max</th>
+          <th>so2_twenty_four_hourly</th>
+          <th>pm25_sub_index</th>
+          <th>psi_twenty_four_hourly</th>
+        </tr>
+      </thead>
+      <tbody id="psiData"></tbody>
+    </table>
+  </div>
+
+  <p id="lastUpdated"></p>
+  <p id="refreshNotice">(Auto-refreshes every 5 minutes)</p>
 
   <script>
-    async function loadPSIData() {
+    async function fetchPSIData() {
       try {
         const response = await fetch('https://api.data.gov.sg/v1/environment/psi');
         const data = await response.json();
-
         const readings = data.items[0].readings;
-        const tbody = document.querySelector("#psiTable tbody");
+        const regions = data.region_metadata.map(r => r.name);
+        const tbody = document.getElementById('psiData');
+        const lastUpdated = document.getElementById('lastUpdated');
 
-        for (const [key, value] of Object.entries(readings)) {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${key}</td>
-            <td>${value.north}</td>
-            <td>${value.south}</td>
-            <td>${value.east}</td>
-            <td>${value.west}</td>
-            <td>${value.central}</td>
-            <td>${value.national}</td>
-          `;
+        tbody.innerHTML = '';
+
+        regions.forEach(region => {
+          const row = document.createElement('tr');
+          const metrics = [
+            'o3_sub_index', 'pm10_twenty_four_hourly', 'pm10_sub_index',
+            'co_sub_index', 'pm25_twenty_four_hourly', 'so2_sub_index',
+            'co_eight_hour_max', 'no2_one_hour_max', 'so2_twenty_four_hourly',
+            'pm25_sub_index', 'psi_twenty_four_hourly'
+          ];
+
+          row.innerHTML = `<td>${region}</td>` + metrics.map(metric => 
+            `<td>${readings[metric][region]}</td>`
+          ).join('');
+
           tbody.appendChild(row);
-        }
+        });
+
+        lastUpdated.textContent = `Last updated: ${new Date(data.items[0].update_timestamp).toLocaleString()}`;
       } catch (error) {
         console.error('Error fetching PSI data:', error);
       }
     }
 
-    loadPSIData();
+    // Fetch immediately and refresh every 5 minutes (300,000 ms)
+    fetchPSIData();
+    setInterval(fetchPSIData, 300000);
   </script>
 </body>
 </html>
